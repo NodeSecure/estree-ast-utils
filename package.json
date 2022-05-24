@@ -34,9 +34,13 @@
     "c8": "^7.11.3",
     "cross-env": "^7.0.3",
     "eslint": "^8.16.0",
+    "estree-walker": "^3.0.1",
     "iterator-matcher": "^1.0.1",
     "meriyah": "^4.2.1",
     "pkg-ok": "^3.0.0",
     "tape": "^5.5.3"
+  },
+  "dependencies": {
+    "@nodesecure/sec-literal": "^1.1.0"
   }
 }

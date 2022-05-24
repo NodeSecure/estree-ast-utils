@@ -1,3 +1,9 @@
+// Import Third-party Dependencies
+import { Hex } from "@nodesecure/sec-literal";
+
+// Import Internal Dependencies
+import { concatBinaryExpression } from "./concatBinaryExpression.js";
+
 /**
  * Return the complete identifier of a MemberExpression
  *
@@ -28,6 +34,22 @@ export function* getMemberExpressionIdentifier(node) {
       yield node.property.value;
       break;
 
-    // TODO: BinaryExpression + CallExpression
+    // foo.bar[callexpr()]
+    case "CallExpression": {
+      const args = node.property.arguments;
+      if (args.length > 0 && args[0].type === "Literal" && Hex.isHex(args[0].value)) {
+        yield Buffer.from(args[0].value, "hex").toString();
+      }
+      break;
+    }
+
+    // foo.bar["k" + "e" + "y"]
+    case "BinaryExpression": {
+      const literal = [...concatBinaryExpression(node.property)].join("");
+      if (literal.trim() !== "") {
+        yield literal;
+      }
+      break;
+    }
   }
 }

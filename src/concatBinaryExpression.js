@@ -8,36 +8,30 @@ const kBinaryExprTypes = new Set([
   "Identifier"
 ]);
 
-export function concatBinaryExpression(node, identifiers = new Set()) {
+export function* concatBinaryExpression(node, identifiers = new Set()) {
   const { left, right } = node;
   if (!kBinaryExprTypes.has(left.type) || !kBinaryExprTypes.has(right.type)) {
-    return null;
+    return;
   }
-  let str = "";
 
   for (const childNode of [left, right]) {
     switch (childNode.type) {
       case "BinaryExpression": {
-        const value = concatBinaryExpression(childNode, identifiers);
-        if (value !== null) {
-          str += value;
-        }
+        yield* concatBinaryExpression(childNode, identifiers);
         break;
       }
       case "ArrayExpression": {
-        str += arrayExpressionToString(childNode.elements, identifiers);
+        yield arrayExpressionToString(childNode.elements, identifiers);
         break;
       }
       case "Literal":
-        str += childNode.value;
+        yield childNode.value;
         break;
       case "Identifier":
         if (identifiers.has(childNode.name)) {
-          str += identifiers.get(childNode.name);
+          yield identifiers.get(childNode.name);
         }
         break;
     }
   }
-
-  return str;
 }
