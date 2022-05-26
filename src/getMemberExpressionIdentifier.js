@@ -3,14 +3,19 @@ import { Hex } from "@nodesecure/sec-literal";
 
 // Import Internal Dependencies
 import { concatBinaryExpression } from "./concatBinaryExpression.js";
+import { VariableTracer } from "./utils/VariableTracer.js";
 
 /**
  * Return the complete identifier of a MemberExpression
  *
  * @param {any} node
+ * @param {object} options
+ * @param {VariableTracer} [options.tracer=null]
  * @returns {IterableIterator<string>}
  */
-export function* getMemberExpressionIdentifier(node) {
+export function* getMemberExpressionIdentifier(node, options = {}) {
+  const { tracer = null } = options;
+
   switch (node.object.type) {
     // Chain with another MemberExpression
     case "MemberExpression":
@@ -26,9 +31,16 @@ export function* getMemberExpressionIdentifier(node) {
   }
 
   switch (node.property.type) {
-    case "Identifier":
-      yield node.property.name;
+    case "Identifier": {
+      if (tracer !== null && tracer.literalIdentifiers.has(node.property.name)) {
+        yield tracer.literalIdentifiers.get(node.property.name);
+      }
+      else {
+        yield node.property.name;
+      }
+
       break;
+    }
     // Literal is used when the property is computed
     case "Literal":
       yield node.property.value;

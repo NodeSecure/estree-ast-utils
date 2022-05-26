@@ -3,12 +3,16 @@ import { EventEmitter } from "events";
 
 // Import Internal Dependencies
 import { notNullOrUndefined } from "./notNullOrUndefined.js";
+import { getSubMemberExpressionSegments } from "./getSubMemberExpressionSegments.js";
 import { getMemberExpressionIdentifier } from "../getMemberExpressionIdentifier.js";
 import { getCallExpressionIdentifier } from "../getCallExpressionIdentifier.js";
 
 // CONSTANTS
 const kGlobalIdentifiersToTrace = new Set([
   "global", "globalThis", "root", "GLOBAL", "window"
+]);
+const kRequirePatterns = new Set([
+  "require", "require.resolve", "process.mainModule.require"
 ]);
 const kUnsafeGlobalCallExpression = new Set(["eval", "Function"]);
 
@@ -28,12 +32,12 @@ export class VariableTracer extends EventEmitter {
   }
 
   enableDefaultTracing() {
+    [...kRequirePatterns]
+      .forEach((pattern) => this.trace(pattern, { followConsecutiveAssignment: true, name: "require" }));
+
     return this
-      .trace("require", { followConsecutiveAssignment: true })
       .trace("eval")
-      .trace("Function")
-      .trace("process.mainModule")
-      .trace("require.resolve", { followConsecutiveAssignment: true });
+      .trace("Function");
   }
 
   /**
@@ -59,10 +63,7 @@ export class VariableTracer extends EventEmitter {
       assignmentMemory: []
     });
     if (identifierOrMemberExpr.includes(".")) {
-      const parts = identifierOrMemberExpr.split(".");
-      parts.pop();
-
-      parts
+      [...getSubMemberExpressionSegments(identifierOrMemberExpr)]
         .filter((expr) => !this.#traced.has(expr))
         .forEach((expr) => this.trace(expr, { followConsecutiveAssignment: true, name }));
     }
@@ -77,15 +78,15 @@ export class VariableTracer extends EventEmitter {
   //   return originTracedIdentifier.assignmentMemory.join(".");
   // }
 
-  #declareNewAssignment(identifierOrMemberExpr, variableDeclaratorNode) {
+  #declareNewAssignment(identifierOrMemberExpr, id) {
     const tracedVariant = this.#traced.get(identifierOrMemberExpr);
-    const newIdentiferName = variableDeclaratorNode.id.name;
+    const newIdentiferName = id.name;
 
     const assignmentEventPayload = {
       name: tracedVariant.name,
       identifierOrMemberExpr: tracedVariant.identifierOrMemberExpr,
       id: newIdentiferName,
-      location: variableDeclaratorNode.id.loc
+      location: id.loc
     };
     this.emit(VariableTracer.AssignmentEvent, assignmentEventPayload);
     this.emit(tracedVariant.identifierOrMemberExpr, assignmentEventPayload);
@@ -114,11 +115,33 @@ export class VariableTracer extends EventEmitter {
     });
   }
 
-  walk(node) {
-    if (node.type !== "VariableDeclaration") {
+  #walkImportDeclaration(node) {
+    const moduleName = node.source.value;
+    if (!this.#traced.has(moduleName)) {
       return;
     }
 
+    // import * as boo from "crypto";
+    if (node.specifiers[0].type === "ImportNamespaceSpecifier") {
+      const importNamespaceNode = node.specifiers[0];
+      this.#declareNewAssignment(moduleName, importNamespaceNode.local);
+
+      return;
+    }
+
+    // import { createHash } from "crypto";
+    const importSpecifiers = node.specifiers
+      .filter((specifierNode) => specifierNode.type === "ImportSpecifier");
+    for (const specifier of importSpecifiers) {
+      const fullImportedName = `${moduleName}.${specifier.imported.name}`;
+
+      if (this.#traced.has(fullImportedName)) {
+        this.#declareNewAssignment(fullImportedName, specifier.imported);
+      }
+    }
+  }
+
+  #walkVariableDeclarator(node) {
     for (const variableDeclaratorNode of node.declarations) {
       const { init, id } = variableDeclaratorNode;
 
@@ -139,6 +162,19 @@ export class VariableTracer extends EventEmitter {
           if (kUnsafeGlobalCallExpression.has(identifierName)) {
             this.#variablesRefToGlobal.add(id.name);
           }
+          // const { createHash } = require("crypto");
+          // const foo = require("crypto");
+          else if (kRequirePatterns.has(identifierName)) {
+            const moduleNameLiteral = init.arguments
+              .find((argumentNode) => argumentNode.type === "Literal" && this.#traced.has(argumentNode.value));
+            if (!moduleNameLiteral) {
+              break;
+            }
+
+            if (id.type === "Identifier") {
+              this.#declareNewAssignment(moduleNameLiteral.value, id);
+            }
+          }
 
           break;
         }
@@ -147,7 +183,7 @@ export class VariableTracer extends EventEmitter {
         case "Identifier": {
           const identifierName = init.name;
           if (this.#traced.has(identifierName)) {
-            this.#declareNewAssignment(identifierName, variableDeclaratorNode);
+            this.#declareNewAssignment(identifierName, variableDeclaratorNode.id);
           }
           else if (this.#isGlobalVariableIdentifier(identifierName)) {
             this.#variablesRefToGlobal.add(id.name);
@@ -159,11 +195,11 @@ export class VariableTracer extends EventEmitter {
         // process.mainModule and require.resolve
         case "MemberExpression": {
           // Example: ["process", "mainModule"]
-          const memberExprParts = [...getMemberExpressionIdentifier(init)];
+          const memberExprParts = [...getMemberExpressionIdentifier(init, { tracer: this })];
           const memberExprFullname = memberExprParts.join(".");
 
           if (this.#traced.has(memberExprFullname)) {
-            this.#declareNewAssignment(memberExprFullname, variableDeclaratorNode);
+            this.#declareNewAssignment(memberExprFullname, variableDeclaratorNode.id);
           }
           else {
             const alternativeMemberExprParts = this.#reverseMemberExprParts(memberExprParts);
@@ -171,13 +207,25 @@ export class VariableTracer extends EventEmitter {
             console.log(alternativeMemberExprFullname);
 
             if (this.#traced.has(alternativeMemberExprFullname)) {
-              this.#declareNewAssignment(alternativeMemberExprFullname, variableDeclaratorNode);
+              this.#declareNewAssignment(alternativeMemberExprFullname, variableDeclaratorNode.id);
             }
           }
 
           break;
         }
       }
+    }
+  }
+
+  walk(node) {
+    switch (node.type) {
+      case "ImportDeclaration": {
+        this.#walkImportDeclaration(node);
+        break;
+      }
+      case "VariableDeclaration":
+        this.#walkVariableDeclarator(node);
+        break;
     }
   }
 }

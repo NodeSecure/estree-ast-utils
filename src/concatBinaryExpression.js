@@ -1,5 +1,6 @@
 // Import Internal Dependencies
 import { arrayExpressionToString } from "./arrayExpressionToString.js";
+import { VariableTracer } from "./utils/VariableTracer.js";
 
 // CONSTANTS
 const kBinaryExprTypes = new Set([
@@ -8,8 +9,16 @@ const kBinaryExprTypes = new Set([
   "Identifier"
 ]);
 
-export function* concatBinaryExpression(node, identifiers = new Set()) {
+/**
+ * @param {*} node
+ * @param {object} options
+ * @param {VariableTracer} [options.tracer=null]
+ * @returns {IterableIterator<string>}
+ */
+export function* concatBinaryExpression(node, options = {}) {
+  const { tracer = null } = options;
   const { left, right } = node;
+
   if (!kBinaryExprTypes.has(left.type) || !kBinaryExprTypes.has(right.type)) {
     return;
   }
@@ -17,19 +26,19 @@ export function* concatBinaryExpression(node, identifiers = new Set()) {
   for (const childNode of [left, right]) {
     switch (childNode.type) {
       case "BinaryExpression": {
-        yield* concatBinaryExpression(childNode, identifiers);
+        yield* concatBinaryExpression(childNode, { tracer });
         break;
       }
       case "ArrayExpression": {
-        yield arrayExpressionToString(childNode.elements, identifiers);
+        yield* arrayExpressionToString(childNode.elements, { tracer });
         break;
       }
       case "Literal":
         yield childNode.value;
         break;
       case "Identifier":
-        if (identifiers.has(childNode.name)) {
-          yield identifiers.get(childNode.name);
+        if (tracer !== null && tracer.literalIdentifiers.has(childNode.name)) {
+          yield tracer.literalIdentifiers.get(childNode.name);
         }
         break;
     }

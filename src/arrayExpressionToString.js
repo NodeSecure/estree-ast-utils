@@ -1,6 +1,16 @@
+// Import Internal Dependencies
+import { VariableTracer } from "./utils/VariableTracer.js";
 
-export function arrayExpressionToString(elements, identifiers = null) {
-  let ret = "";
+/**
+ * @param {*} elements
+ * @param {object} options
+ * @param {VariableTracer} [options.tracer=null]
+ * @returns {IterableIterator<string>}
+ */
+
+export function* arrayExpressionToString(elements, options = {}) {
+  const { tracer = null } = options;
+
   const isArrayExpr = typeof elements === "object" && Reflect.has(elements, "elements");
   const localElements = isArrayExpr ? elements.elements : elements;
 
@@ -11,12 +21,10 @@ export function arrayExpressionToString(elements, identifiers = null) {
       }
 
       const value = Number(row.value);
-      ret += Number.isNaN(value) ? row.value : String.fromCharCode(value);
+      yield Number.isNaN(value) ? row.value : String.fromCharCode(value);
     }
-    else if (row.type === "Identifier" && identifiers !== null && identifiers.has(row.name)) {
-      ret += identifiers.get(row.name);
+    else if (row.type === "Identifier" && tracer !== null && tracer.literalIdentifiers.has(row.name)) {
+      yield tracer.literalIdentifiers.get(row.name);
     }
   }
-
-  return ret;
 }
