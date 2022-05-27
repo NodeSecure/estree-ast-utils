@@ -43,7 +43,9 @@ export class VariableTracer extends EventEmitter {
   /**
    *
    * @param {!string} identifierOrMemberExpr
-   * @param {*} options
+   * @param {object} [options]
+   * @param {string} [options.name]
+   * @param {boolean} [options.followConsecutiveAssignment=false]
    *
    * @example
    * new VariableTracer()
@@ -71,12 +73,20 @@ export class VariableTracer extends EventEmitter {
     return this;
   }
 
-  // getIdentifierTrace(identifier) {
-  //   const tracedIdentifier = this.#traced.Identifier.get(identifier);
-  //   const originTracedIdentifier = this.#traced.Identifier.get(tracedIdentifier.name);
+  getDataFromIdentifier(identifierOrMemberExpr) {
+    if (!this.#traced.has(identifierOrMemberExpr)) {
+      return null;
+    }
 
-  //   return originTracedIdentifier.assignmentMemory.join(".");
-  // }
+    const tracedIdentifier = this.#traced.get(identifierOrMemberExpr);
+    const assignmentMemory = this.#traced.get(tracedIdentifier.name)?.assignmentMemory ?? [];
+
+    return {
+      name: tracedIdentifier.name,
+      identifierOrMemberExpr: tracedIdentifier.identifierOrMemberExpr,
+      assignmentMemory
+    };
+  }
 
   #declareNewAssignment(identifierOrMemberExpr, id) {
     const tracedVariant = this.#traced.get(identifierOrMemberExpr);
@@ -204,7 +214,6 @@ export class VariableTracer extends EventEmitter {
           else {
             const alternativeMemberExprParts = this.#reverseMemberExprParts(memberExprParts);
             const alternativeMemberExprFullname = alternativeMemberExprParts.join(".");
-            console.log(alternativeMemberExprFullname);
 
             if (this.#traced.has(alternativeMemberExprFullname)) {
               this.#declareNewAssignment(alternativeMemberExprFullname, variableDeclaratorNode.id);

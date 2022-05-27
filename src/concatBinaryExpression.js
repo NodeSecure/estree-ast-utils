@@ -2,13 +2,6 @@
 import { arrayExpressionToString } from "./arrayExpressionToString.js";
 import { VariableTracer } from "./utils/VariableTracer.js";
 
-// CONSTANTS
-const kBinaryExprTypes = new Set([
-  "Literal",
-  "BinaryExpression",
-  "Identifier"
-]);
-
 /**
  * @param {*} node
  * @param {object} options
@@ -17,20 +10,15 @@ const kBinaryExprTypes = new Set([
  */
 export function* concatBinaryExpression(node, options = {}) {
   const { tracer = null } = options;
-  const { left, right } = node;
 
-  if (!kBinaryExprTypes.has(left.type) || !kBinaryExprTypes.has(right.type)) {
-    return;
-  }
-
-  for (const childNode of [left, right]) {
+  for (const childNode of [node.left, node.right]) {
     switch (childNode.type) {
       case "BinaryExpression": {
         yield* concatBinaryExpression(childNode, { tracer });
         break;
       }
       case "ArrayExpression": {
-        yield* arrayExpressionToString(childNode.elements, { tracer });
+        yield* arrayExpressionToString(childNode, { tracer });
         break;
       }
       case "Literal":

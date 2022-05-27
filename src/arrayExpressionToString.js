@@ -2,29 +2,36 @@
 import { VariableTracer } from "./utils/VariableTracer.js";
 
 /**
- * @param {*} elements
+ * @param {*} node
  * @param {object} options
  * @param {VariableTracer} [options.tracer=null]
  * @returns {IterableIterator<string>}
  */
 
-export function* arrayExpressionToString(elements, options = {}) {
+export function* arrayExpressionToString(node, options = {}) {
   const { tracer = null } = options;
 
-  const isArrayExpr = typeof elements === "object" && Reflect.has(elements, "elements");
-  const localElements = isArrayExpr ? elements.elements : elements;
+  if (!node || node.type !== "ArrayExpression") {
+    return;
+  }
 
-  for (const row of localElements) {
-    if (row.type === "Literal") {
-      if (row.value === "") {
-        continue;
+  for (const row of node.elements) {
+    switch (row.type) {
+      case "Literal": {
+        if (row.value === "") {
+          continue;
+        }
+
+        const value = Number(row.value);
+        yield Number.isNaN(value) ? row.value : String.fromCharCode(value);
+        break;
       }
-
-      const value = Number(row.value);
-      yield Number.isNaN(value) ? row.value : String.fromCharCode(value);
-    }
-    else if (row.type === "Identifier" && tracer !== null && tracer.literalIdentifiers.has(row.name)) {
-      yield tracer.literalIdentifiers.get(row.name);
+      case "Identifier": {
+        if (tracer !== null && tracer.literalIdentifiers.has(row.name)) {
+          yield tracer.literalIdentifiers.get(row.name);
+        }
+        break;
+      }
     }
   }
 }
