@@ -1,7 +1,9 @@
 // Import Internal Dependencies
 import { notNullOrUndefined } from "./utils/notNullOrUndefined.js";
 
-export function* getVariableDeclarationIdentifiers(node) {
+export function* getVariableDeclarationIdentifiers(node, options = {}) {
+  const { prefix = null } = options;
+
   switch (node.type) {
     case "VariableDeclaration": {
       for (const variableDeclarator of node.declarations) {
@@ -17,9 +19,34 @@ export function* getVariableDeclarationIdentifiers(node) {
       break;
 
     case "Identifier":
-      yield node.name;
+      yield { name: autoPrefix(node.name, prefix), assignmentId: node };
 
       break;
+
+    case "Property": {
+      if (node.kind !== "init") {
+        break;
+      }
+
+      if (node.value.type === "ObjectPattern" || node.value.type === "ArrayPattern") {
+        yield* getVariableDeclarationIdentifiers(node.value, {
+          prefix: autoPrefix(node.key.name, prefix)
+        });
+        break;
+      }
+
+      let assignmentId = node.key;
+      if (node.value.type === "Identifier") {
+        assignmentId = node.value;
+      }
+      else if (node.value.type === "AssignmentPattern") {
+        assignmentId = node.value.left;
+      }
+
+      yield { name: autoPrefix(node.key.name, prefix), assignmentId };
+
+      break;
+    }
 
     /**
      * Rest syntax (in ArrayPattern or ObjectPattern for example)
@@ -27,7 +54,7 @@ export function* getVariableDeclarationIdentifiers(node) {
      * const {...foo} = {}
      */
     case "RestElement":
-      yield node.argument.name;
+      yield { name: autoPrefix(node.argument.name, prefix), assignmentId: node.argument };
 
       break;
 
@@ -70,4 +97,8 @@ export function* getVariableDeclarationIdentifiers(node) {
 
       break;
   }
+}
+
+function autoPrefix(name, prefix = null) {
+  return typeof prefix === "string" ? `${prefix}.${name}` : name;
 }

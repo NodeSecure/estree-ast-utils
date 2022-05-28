@@ -126,6 +126,37 @@ test("it should be able to Trace crypto.createHash when imported with an ESM Imp
   tape.end();
 });
 
+test("it should be able to Trace createHash with CJS require and an ObjectPattern", (tape) => {
+  const helpers = createTracer();
+  helpers.tracer.trace("crypto.createHash", { followConsecutiveAssignment: true });
+  const assignments = helpers.getAssignmentArray();
+
+  helpers.walkOnCode(`
+    const { createHash } = require("crypto");
+
+    const createHashBis = createHash;
+    createHashBis("md5");
+  `);
+
+  const createHashBis = helpers.tracer.getDataFromIdentifier("createHashBis");
+
+  tape.deepEqual(createHashBis, {
+    name: "crypto.createHash",
+    identifierOrMemberExpr: "crypto.createHash",
+    assignmentMemory: ["createHash", "createHashBis"]
+  });
+  tape.strictEqual(assignments.length, 2);
+
+  const [eventOne, eventTwo] = assignments;
+  tape.strictEqual(eventOne.identifierOrMemberExpr, "crypto.createHash");
+  tape.strictEqual(eventOne.id, "createHash");
+
+  tape.strictEqual(eventTwo.identifierOrMemberExpr, "crypto.createHash");
+  tape.strictEqual(eventTwo.id, "createHashBis");
+
+  tape.end();
+});
+
 test("it should be able to Trace crypto.createHash when imported with an ESM ImportSpecifier", (tape) => {
   const helpers = createTracer();
   helpers.tracer.trace("crypto.createHash", { followConsecutiveAssignment: true });
@@ -186,6 +217,35 @@ test("it should be able to Trace crypto.createHash with CJS require and Literal 
 
   tape.strictEqual(eventTwo.identifierOrMemberExpr, "crypto.createHash");
   tape.strictEqual(eventTwo.id, "createHashBis");
+
+  tape.end();
+});
+
+test("it should be able to Trace a global Assignement using an ESTree ObjectPattern", (tape) => {
+  const helpers = createTracer(true);
+  const assignments = helpers.getAssignmentArray();
+
+  helpers.walkOnCode(`
+    const { process: yoo } = globalThis;
+
+    const boo = yoo.mainModule.require;
+  `);
+
+  const boo = helpers.tracer.getDataFromIdentifier("boo");
+
+  tape.deepEqual(boo, {
+    name: "require",
+    identifierOrMemberExpr: "process.mainModule.require",
+    assignmentMemory: ["yoo", "boo"]
+  });
+  tape.strictEqual(assignments.length, 2);
+
+  const [eventOne, eventTwo] = assignments;
+  tape.strictEqual(eventOne.identifierOrMemberExpr, "process");
+  tape.strictEqual(eventOne.id, "yoo");
+
+  tape.strictEqual(eventTwo.identifierOrMemberExpr, "process.mainModule.require");
+  tape.strictEqual(eventTwo.id, "boo");
 
   tape.end();
 });
