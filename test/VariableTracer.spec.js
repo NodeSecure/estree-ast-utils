@@ -221,12 +221,41 @@ test("it should be able to Trace crypto.createHash with CJS require and Literal 
   tape.end();
 });
 
-test("it should be able to Trace a global Assignement using an ESTree ObjectPattern", (tape) => {
+test("it should be able to Trace a global Assignment using an ESTree ObjectPattern", (tape) => {
   const helpers = createTracer(true);
   const assignments = helpers.getAssignmentArray();
 
   helpers.walkOnCode(`
     const { process: yoo } = globalThis;
+
+    const boo = yoo.mainModule.require;
+  `);
+
+  const boo = helpers.tracer.getDataFromIdentifier("boo");
+
+  tape.deepEqual(boo, {
+    name: "require",
+    identifierOrMemberExpr: "process.mainModule.require",
+    assignmentMemory: ["yoo", "boo"]
+  });
+  tape.strictEqual(assignments.length, 2);
+
+  const [eventOne, eventTwo] = assignments;
+  tape.strictEqual(eventOne.identifierOrMemberExpr, "process");
+  tape.strictEqual(eventOne.id, "yoo");
+
+  tape.strictEqual(eventTwo.identifierOrMemberExpr, "process.mainModule.require");
+  tape.strictEqual(eventTwo.id, "boo");
+
+  tape.end();
+});
+
+test("it should be able to Trace an Unsafe Function() Assignment using an ESTree ObjectPattern", (tape) => {
+  const helpers = createTracer(true);
+  const assignments = helpers.getAssignmentArray();
+
+  helpers.walkOnCode(`
+    const { process: yoo } = Function("return this")();
 
     const boo = yoo.mainModule.require;
   `);

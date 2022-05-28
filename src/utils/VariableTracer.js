@@ -13,7 +13,7 @@ const kGlobalIdentifiersToTrace = new Set([
   "global", "globalThis", "root", "GLOBAL", "window"
 ]);
 const kRequirePatterns = new Set([
-  "require", "require.resolve", "process.mainModule.require"
+  "require", "require.resolve", "require.main", "process.mainModule.require"
 ]);
 const kUnsafeGlobalCallExpression = new Set(["eval", "Function"]);
 
@@ -251,8 +251,11 @@ export class VariableTracer extends EventEmitter {
       case "CallExpression": {
         const identifierName = getCallExpressionIdentifier(init);
 
+        if (kUnsafeGlobalCallExpression.has(identifierName)) {
+          this.#autoTraceId(id);
+        }
         // const { createHash } = require("crypto");
-        if (kRequirePatterns.has(identifierName)) {
+        else if (kRequirePatterns.has(identifierName)) {
           this.#walkRequireCallExpression(variableDeclaratorNode);
         }
 
