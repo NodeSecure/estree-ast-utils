@@ -19,7 +19,7 @@ export function* getMemberExpressionIdentifier(node, options = {}) {
   switch (node.object.type) {
     // Chain with another MemberExpression
     case "MemberExpression":
-      yield* getMemberExpressionIdentifier(node.object);
+      yield* getMemberExpressionIdentifier(node.object, options);
       break;
     case "Identifier":
       yield node.object.name;
@@ -57,7 +57,7 @@ export function* getMemberExpressionIdentifier(node, options = {}) {
 
     // foo.bar["k" + "e" + "y"]
     case "BinaryExpression": {
-      const literal = [...concatBinaryExpression(node.property)].join("");
+      const literal = [...concatBinaryExpression(node.property, options)].join("");
       if (literal.trim() !== "") {
         yield literal;
       }

@@ -1,5 +1,5 @@
 // Import Internal Dependencies
-import { notNullOrUndefined } from "./utils/notNullOrUndefined.js";
+import { notNullOrUndefined } from "./utils/index.js";
 
 export function* getVariableDeclarationIdentifiers(node, options = {}) {
   const { prefix = null } = options;
