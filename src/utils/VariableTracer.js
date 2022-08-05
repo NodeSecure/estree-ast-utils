@@ -3,6 +3,7 @@ import { EventEmitter } from "events";
 
 // Import Internal Dependencies
 import { notNullOrUndefined } from "./notNullOrUndefined.js";
+import { isEvilIdentifierPath } from "./isEvilIdentifierPath.js";
 import { getSubMemberExpressionSegments } from "./getSubMemberExpressionSegments.js";
 import { getMemberExpressionIdentifier } from "../getMemberExpressionIdentifier.js";
 import { getCallExpressionIdentifier } from "../getCallExpressionIdentifier.js";
@@ -194,12 +195,20 @@ export class VariableTracer extends EventEmitter {
 
       // const g = eval("this");
       case "CallExpression": {
-        const identifierName = getCallExpressionIdentifier(init);
-        if (kUnsafeGlobalCallExpression.has(identifierName)) {
+        const fullIdentifierPath = getCallExpressionIdentifier(init);
+        const [identifierName] = fullIdentifierPath.split(".");
+
+        console.log(fullIdentifierPath);
+
+        // const id = Function.prototype.call.call(require, require, "http");
+        if (isEvilIdentifierPath(fullIdentifierPath)) {
+          this.#walkRequireCallExpression(variableDeclaratorNode);
+        }
+        else if (kUnsafeGlobalCallExpression.has(identifierName)) {
           this.#variablesRefToGlobal.add(id.name);
         }
-        // const { createHash } = require("crypto");
         // const foo = require("crypto");
+        // const bar = require.call(null, "crypto");
         else if (kRequirePatterns.has(identifierName)) {
           this.#walkRequireCallExpression(variableDeclaratorNode);
         }
@@ -226,6 +235,7 @@ export class VariableTracer extends EventEmitter {
         const memberExprParts = [...getMemberExpressionIdentifier(init, { tracer: this })];
         const memberExprFullname = memberExprParts.join(".");
 
+        // TODO: evil path ?
         if (this.#traced.has(memberExprFullname)) {
           this.#declareNewAssignment(memberExprFullname, variableDeclaratorNode.id);
         }
@@ -249,9 +259,14 @@ export class VariableTracer extends EventEmitter {
     switch (init.type) {
       // const { process } = eval("this");
       case "CallExpression": {
-        const identifierName = getCallExpressionIdentifier(init);
+        const fullIdentifierPath = getCallExpressionIdentifier(init);
+        const [identifierName] = fullIdentifierPath.split(".");
 
-        if (kUnsafeGlobalCallExpression.has(identifierName)) {
+        // const {} = Function.prototype.call.call(require, require, "http");
+        if (isEvilIdentifierPath(fullIdentifierPath)) {
+          this.#walkRequireCallExpression(variableDeclaratorNode);
+        }
+        else if (kUnsafeGlobalCallExpression.has(identifierName)) {
           this.#autoTraceId(id);
         }
         // const { createHash } = require("crypto");
