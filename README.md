@@ -12,10 +12,78 @@ $ yarn add @nodesecure/estree-ast-utils
 ```
 
 ## Usage example
-TBC
+
+```js
+import { VariableTracer } from "@nodesecure/estree-ast-utils";
+
+const tracer = new VariableTracer()
+  .enableDefaultTracing();
+
+const data = tracer.getDataFromIdentifier("identifier...here");
+console.log(data);
+```
 
 ## API
-TBC
+
+<details><summary>arrayExpressionToString(node): IterableIterator< string ></summary>
+
+Translate an ESTree ArrayExpression into an iterable of Literal value.
+
+```js
+["foo", "bar"]
+```
+
+will return `"foo"` then `"bar"`.
+
+</details>
+
+<details><summary>concatBinaryExpression(node): IterableIterator< string ></summary>
+
+Return all Literal part of a given Binary Expression.
+
+```js
+"foo" + "bar"
+```
+
+will return `"foo"` then `"bar"`.
+
+</details>
+
+<details><summary>getCallExpressionIdentifier(node): string | null</summary>
+
+Return the identifier name of the CallExpression (or null if there is none).
+
+```js
+foobar()
+```
+
+will return `"foobar"`.
+
+</details>
+
+<details><summary>getMemberExpressionIdentifier(node): IterableIterator< string ></summary>
+
+Return the identifier name of the CallExpression (or null if there is none).
+
+```js
+foo.bar()
+```
+
+will return `"foo"` then `"bar"`.
+
+</details>
+
+<details><summary>getVariableDeclarationIdentifiers(node): IterableIterator< string ></summary>
+
+Get all variables identifier name.
+
+```js
+const [foo, bar] = [1, 2];
+```
+
+will return `"foo"` then `"bar"`.
+
+</details>
 
 ## Contributors ✨
 

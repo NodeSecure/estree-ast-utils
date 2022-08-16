@@ -300,22 +300,22 @@ test("it should be able to Trace an Unsafe Function() Assignment using an ESTree
 //   tape.end();
 // });
 
-test("it should be able to Trace an unsafe crypto.createHash using Function.prototype.call reassignment", (tape) => {
-  const helpers = createTracer();
-  helpers.tracer.trace("crypto.createHash", { followConsecutiveAssignment: true });
-  const assignments = helpers.getAssignmentArray();
+// test("it should be able to Trace an unsafe crypto.createHash using Function.prototype.call reassignment", (tape) => {
+//   const helpers = createTracer();
+//   helpers.tracer.trace("crypto.createHash", { followConsecutiveAssignment: true });
+//   const assignments = helpers.getAssignmentArray();
 
-  helpers.walkOnCode(`
-  const aA = Function.prototype.call;
-  const bB = require;
+//   helpers.walkOnCode(`
+//   const aA = Function.prototype.call;
+//   const bB = require;
 
-  const createHashBis = aA.call(bB, bB, "crypto").createHash;
-  createHashBis("md5");
-  `);
+//   const createHashBis = aA.call(bB, bB, "crypto").createHash;
+//   createHashBis("md5");
+//   `);
 
-  const createHashBis = helpers.tracer.getDataFromIdentifier("createHashBis");
-  console.log(createHashBis);
-  console.log(assignments);
+//   const createHashBis = helpers.tracer.getDataFromIdentifier("createHashBis");
+//   console.log(createHashBis);
+//   console.log(assignments);
 
-  tape.end();
-});
+//   tape.end();
+// });
