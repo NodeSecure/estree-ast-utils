@@ -52,3 +52,41 @@ test("given a BinaryExpression of two Identifiers then the iterable must the tra
   tape.strictEqual(iterResult.elapsedSteps, 2);
   tape.end();
 });
+
+test("given a one level BinaryExpression with an unsupported node it should throw an Error", (tape) => {
+  tape.plan(1);
+  const { tracer } = createTracer();
+
+  const [astNode] = codeToAst("evil() + 's'");
+  try {
+    const iter = concatBinaryExpression(getExpressionFromStatement(astNode), {
+      tracer,
+      stopOnUnsupportedNode: true
+    });
+    iter.next();
+  }
+  catch (error) {
+    tape.strictEqual(error.message, "concatBinaryExpression:: Unsupported node detected");
+  }
+
+  tape.end();
+});
+
+test("given a Deep BinaryExpression with an unsupported node it should throw an Error", (tape) => {
+  tape.plan(1);
+  const { tracer } = createTracer();
+
+  const [astNode] = codeToAst("'a' + evil() + 's'");
+  try {
+    const iter = concatBinaryExpression(getExpressionFromStatement(astNode), {
+      tracer,
+      stopOnUnsupportedNode: true
+    });
+    iter.next();
+  }
+  catch (error) {
+    tape.strictEqual(error.message, "concatBinaryExpression:: Unsupported node detected");
+  }
+
+  tape.end();
+});
