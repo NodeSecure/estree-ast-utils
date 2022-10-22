@@ -198,8 +198,6 @@ export class VariableTracer extends EventEmitter {
         const fullIdentifierPath = getCallExpressionIdentifier(init);
         const [identifierName] = fullIdentifierPath.split(".");
 
-        console.log(fullIdentifierPath);
-
         // const id = Function.prototype.call.call(require, require, "http");
         if (isEvilIdentifierPath(fullIdentifierPath)) {
           this.#walkRequireCallExpression(variableDeclaratorNode);
