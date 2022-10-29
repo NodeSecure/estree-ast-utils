@@ -11,5 +11,5 @@ export function isEvilIdentifierPath(identifier) {
  */
 function isFunctionPrototype(identifier) {
   return identifier.startsWith("Function.prototype")
-    && identifier.match(/call|apply|bind/i);
+    && /call|apply|bind/i.test(identifier);
 }
