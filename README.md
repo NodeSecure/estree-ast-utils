@@ -37,7 +37,7 @@ will return `"foo"` then `"bar"`.
 
 </details>
 
-<details><summary>concatBinaryExpression(node): IterableIterator< string ></summary>
+<details><summary>concatBinaryExpression(node, options): IterableIterator< string ></summary>
 
 Return all Literal part of a given Binary Expression.
 
@@ -46,6 +46,8 @@ Return all Literal part of a given Binary Expression.
 ```
 
 will return `"foo"` then `"bar"`.
+
+One of the options of the method is `stopOnUnsupportedNode`, if true it will throw an Error if the left or right side of the Expr is not a supported type.
 
 </details>
 
