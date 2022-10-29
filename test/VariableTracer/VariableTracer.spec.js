@@ -78,6 +78,15 @@ test("it should be able to Trace a malicious CallExpression by recombining segme
   tape.end();
 });
 
+test("given a MemberExpression segment that doesn't match anything then it should return null", (tape) => {
+  const helpers = createTracer(true);
+
+  const result = helpers.tracer.getDataFromIdentifier("foo.bar");
+  tape.strictEqual(result, null);
+
+  tape.end();
+});
+
 // test("it should be able to Trace a require using Function.prototype.call", (tape) => {
 //   const helpers = createTracer();
 //   helpers.tracer.trace("http");

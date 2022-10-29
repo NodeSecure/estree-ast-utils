@@ -87,11 +87,11 @@ export class VariableTracer extends EventEmitter {
       const [segment] = identifierOrMemberExpr.split(".");
       if (this.#traced.has(segment)) {
         const tracedIdentifier = this.#traced.get(segment);
-
         finalIdentifier = `${tracedIdentifier.identifierOrMemberExpr}${identifierOrMemberExpr.slice(segment.length)}`;
-        if (!this.#traced.has(finalIdentifier)) {
-          return null;
-        }
+      }
+
+      if (!this.#traced.has(finalIdentifier)) {
+        return null;
       }
     }
     else if (!isTracingIdentifier) {
