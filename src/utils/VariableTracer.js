@@ -75,12 +75,30 @@ export class VariableTracer extends EventEmitter {
     return this;
   }
 
+  /**
+   * @param {!string} identifierOrMemberExpr An identifier like "foo" or "foo.bar"
+   */
   getDataFromIdentifier(identifierOrMemberExpr) {
-    if (!this.#traced.has(identifierOrMemberExpr)) {
+    const isMemberExpr = identifierOrMemberExpr.includes(".");
+    const isTracingIdentifier = this.#traced.has(identifierOrMemberExpr);
+
+    let finalIdentifier = identifierOrMemberExpr;
+    if (isMemberExpr && !isTracingIdentifier) {
+      const [segment] = identifierOrMemberExpr.split(".");
+      if (this.#traced.has(segment)) {
+        const tracedIdentifier = this.#traced.get(segment);
+
+        finalIdentifier = `${tracedIdentifier.identifierOrMemberExpr}${identifierOrMemberExpr.slice(segment.length)}`;
+        if (!this.#traced.has(finalIdentifier)) {
+          return null;
+        }
+      }
+    }
+    else if (!isTracingIdentifier) {
       return null;
     }
 
-    const tracedIdentifier = this.#traced.get(identifierOrMemberExpr);
+    const tracedIdentifier = this.#traced.get(finalIdentifier);
     const assignmentMemory = this.#traced.get(tracedIdentifier.name)?.assignmentMemory ?? [];
 
     return {
