@@ -1,6 +1,6 @@
 {
   "name": "@nodesecure/estree-ast-utils",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Utilities for AST (ESTree compliant)",
   "type": "module",
   "exports": "./index.js",
