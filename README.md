@@ -87,6 +87,16 @@ will return `"foo"` then `"bar"`.
 
 </details>
 
+<details><summary>isLiteralRegex(node): boolean</summary>
+
+Return `true` if the given Node is a Literal Regex Node.
+
+```js
+/^hello/g
+```
+
+</details>
+
 ## Contributors ✨
 
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
