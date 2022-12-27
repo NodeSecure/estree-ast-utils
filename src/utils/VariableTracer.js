@@ -3,7 +3,7 @@ import { EventEmitter } from "events";
 
 // Import Internal Dependencies
 import { notNullOrUndefined } from "./notNullOrUndefined.js";
-import { isEvilIdentifierPath } from "./isEvilIdentifierPath.js";
+import { isEvilIdentifierPath, isNeutralCallable } from "./isEvilIdentifierPath.js";
 import { getSubMemberExpressionSegments } from "./getSubMemberExpressionSegments.js";
 import { getMemberExpressionIdentifier } from "../getMemberExpressionIdentifier.js";
 import { getCallExpressionIdentifier } from "../getCallExpressionIdentifier.js";
@@ -28,6 +28,9 @@ export class VariableTracer extends EventEmitter {
   // PRIVATE PROPERTIES
   #traced = new Map();
   #variablesRefToGlobal = new Set();
+
+  /** @type {Set<string>} */
+  #neutralCallable = new Set();
 
   debug() {
     console.log(this.#traced);
@@ -132,11 +135,24 @@ export class VariableTracer extends EventEmitter {
       this.#variablesRefToGlobal.has(identifierName);
   }
 
-  #reverseMemberExprParts(parts = []) {
+  /**
+   * Search alternative for the given MemberExpression parts
+   *
+   * @example
+   * const { process: aName } = globalThis;
+   * const boo = aName.mainModule.require; // alternative: process.mainModule.require
+   */
+  #searchForMemberExprAlternative(parts = []) {
     return parts.flatMap((identifierName) => {
       if (this.#traced.has(identifierName)) {
         return this.#traced.get(identifierName).identifierOrMemberExpr;
       }
+
+      /**
+       * If identifier is global then we can eliminate the value from MemberExpr
+       *
+       * globalThis.process === process;
+       */
       if (this.#isGlobalVariableIdentifier(identifierName)) {
         return [];
       }
@@ -217,7 +233,8 @@ export class VariableTracer extends EventEmitter {
         const [identifierName] = fullIdentifierPath.split(".");
 
         // const id = Function.prototype.call.call(require, require, "http");
-        if (isEvilIdentifierPath(fullIdentifierPath)) {
+        if (this.#neutralCallable.has(identifierName) || isEvilIdentifierPath(fullIdentifierPath)) {
+          // TODO: make sure we are walking on a require CallExpr here ?
           this.#walkRequireCallExpression(variableDeclaratorNode);
         }
         else if (kUnsafeGlobalCallExpression.has(identifierName)) {
@@ -251,12 +268,15 @@ export class VariableTracer extends EventEmitter {
         const memberExprParts = [...getMemberExpressionIdentifier(init, { tracer: this })];
         const memberExprFullname = memberExprParts.join(".");
 
-        // TODO: evil path ?
-        if (this.#traced.has(memberExprFullname)) {
+        // Function.prototype.call
+        if (isNeutralCallable(memberExprFullname)) {
+          this.#neutralCallable.add(variableDeclaratorNode.id.name);
+        }
+        else if (this.#traced.has(memberExprFullname)) {
           this.#declareNewAssignment(memberExprFullname, variableDeclaratorNode.id);
         }
         else {
-          const alternativeMemberExprParts = this.#reverseMemberExprParts(memberExprParts);
+          const alternativeMemberExprParts = this.#searchForMemberExprAlternative(memberExprParts);
           const alternativeMemberExprFullname = alternativeMemberExprParts.join(".");
 
           if (this.#traced.has(alternativeMemberExprFullname)) {
