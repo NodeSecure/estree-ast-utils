@@ -25,6 +25,9 @@ export class VariableTracer extends EventEmitter {
   /** @type {Map<string, string>} */
   literalIdentifiers = new Map();
 
+  /** @type {Set<string>} */
+  importedModules = new Set();
+
   // PRIVATE PROPERTIES
   #traced = new Map();
   #variablesRefToGlobal = new Set();
@@ -50,6 +53,7 @@ export class VariableTracer extends EventEmitter {
    * @param {!string} identifierOrMemberExpr
    * @param {object} [options]
    * @param {string} [options.name]
+   * @param {string} [options.moduleName=null]
    * @param {boolean} [options.followConsecutiveAssignment=false]
    *
    * @example
@@ -60,6 +64,7 @@ export class VariableTracer extends EventEmitter {
   trace(identifierOrMemberExpr, options = {}) {
     const {
       followConsecutiveAssignment = false,
+      moduleName = null,
       name = identifierOrMemberExpr
     } = options;
 
@@ -67,12 +72,19 @@ export class VariableTracer extends EventEmitter {
       name,
       identifierOrMemberExpr,
       followConsecutiveAssignment,
-      assignmentMemory: []
+      assignmentMemory: [],
+      moduleName
     });
+
     if (identifierOrMemberExpr.includes(".")) {
-      [...getSubMemberExpressionSegments(identifierOrMemberExpr)]
-        .filter((expr) => !this.#traced.has(expr))
-        .forEach((expr) => this.trace(expr, { followConsecutiveAssignment: true, name }));
+      const exprs = [...getSubMemberExpressionSegments(identifierOrMemberExpr)]
+        .filter((expr) => !this.#traced.has(expr));
+
+      for (const expr of exprs) {
+        this.trace(expr, {
+          followConsecutiveAssignment: true, name, moduleName
+        });
+      }
     }
 
     return this;
@@ -113,6 +125,13 @@ export class VariableTracer extends EventEmitter {
 
   #declareNewAssignment(identifierOrMemberExpr, id) {
     const tracedVariant = this.#traced.get(identifierOrMemberExpr);
+
+    // We return if required module has not been imported
+    // It mean the assigment has no relation with the required tracing
+    if (tracedVariant.moduleName !== null && !this.importedModules.has(tracedVariant.moduleName)) {
+      return;
+    }
+
     const newIdentiferName = id.name;
 
     const assignmentEventPayload = {
@@ -177,6 +196,8 @@ export class VariableTracer extends EventEmitter {
       return;
     }
 
+    this.importedModules.add(moduleName);
+
     // import * as boo from "crypto";
     if (node.specifiers[0].type === "ImportNamespaceSpecifier") {
       const importNamespaceNode = node.specifiers[0];
@@ -205,6 +226,7 @@ export class VariableTracer extends EventEmitter {
     if (!moduleNameLiteral) {
       return;
     }
+    this.importedModules.add(moduleNameLiteral.value);
 
     switch (id.type) {
       case "Identifier":
