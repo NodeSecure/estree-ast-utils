@@ -6,6 +6,10 @@ export function isEvilIdentifierPath(identifier) {
   return isFunctionPrototype(identifier);
 }
 
+export function isNeutralCallable(identifier) {
+  return identifier === "Function.prototype.call";
+}
+
 /**
  * @param {!string} identifier
  */

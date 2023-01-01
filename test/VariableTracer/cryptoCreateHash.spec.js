@@ -6,7 +6,10 @@ import { createTracer } from "../utils.js";
 
 test("it should be able to Trace crypto.createHash when imported with an ESTree ImportNamespaceSpecifier (ESM)", (tape) => {
   const helpers = createTracer();
-  helpers.tracer.trace("crypto.createHash", { followConsecutiveAssignment: true });
+  helpers.tracer.trace("crypto.createHash", {
+    followConsecutiveAssignment: true,
+    moduleName: "crypto"
+  });
   const assignments = helpers.getAssignmentArray();
 
   helpers.walkOnCode(`
@@ -38,7 +41,10 @@ test("it should be able to Trace crypto.createHash when imported with an ESTree 
 
 test("it should be able to Trace createHash when required (CommonJS) and destructured with an ESTree ObjectPattern", (tape) => {
   const helpers = createTracer();
-  helpers.tracer.trace("crypto.createHash", { followConsecutiveAssignment: true });
+  helpers.tracer.trace("crypto.createHash", {
+    followConsecutiveAssignment: true,
+    moduleName: "crypto"
+  });
   const assignments = helpers.getAssignmentArray();
 
   /**
@@ -73,7 +79,10 @@ test("it should be able to Trace createHash when required (CommonJS) and destruc
 
 test("it should be able to Trace crypto.createHash when imported with an ESTree ImportSpecifier (ESM)", (tape) => {
   const helpers = createTracer();
-  helpers.tracer.trace("crypto.createHash", { followConsecutiveAssignment: true });
+  helpers.tracer.trace("crypto.createHash", {
+    followConsecutiveAssignment: true,
+    moduleName: "crypto"
+  });
   const assignments = helpers.getAssignmentArray();
 
   helpers.walkOnCode(`
@@ -104,7 +113,10 @@ test("it should be able to Trace crypto.createHash when imported with an ESTree 
 
 test("it should be able to Trace crypto.createHash with CommonJS require and with a computed method with a Literal", (tape) => {
   const helpers = createTracer();
-  helpers.tracer.trace("crypto.createHash", { followConsecutiveAssignment: true });
+  helpers.tracer.trace("crypto.createHash", {
+    followConsecutiveAssignment: true,
+    moduleName: "crypto"
+  });
   const assignments = helpers.getAssignmentArray();
 
   helpers.walkOnCode(`
@@ -115,6 +127,8 @@ test("it should be able to Trace crypto.createHash with CommonJS require and wit
     const createHashBis = crypto[id];
     createHashBis("md5");
   `);
+
+  tape.strictEqual(helpers.tracer.importedModules.has("crypto"), true);
 
   const createHashBis = helpers.tracer.getDataFromIdentifier("createHashBis");
 
@@ -131,6 +145,29 @@ test("it should be able to Trace crypto.createHash with CommonJS require and wit
 
   tape.strictEqual(eventTwo.identifierOrMemberExpr, "crypto.createHash");
   tape.strictEqual(eventTwo.id, "createHashBis");
+
+  tape.end();
+});
+
+test("it should not detect variable assignment since the crypto module is not imported", (tape) => {
+  const helpers = createTracer();
+  helpers.tracer.trace("crypto.createHash", {
+    followConsecutiveAssignment: true,
+    moduleName: "crypto"
+  });
+
+  const assignments = helpers.getAssignmentArray();
+
+  helpers.walkOnCode(`
+    const crypto = {
+      createHash() {}
+    }
+    const _t = crypto.createHash;
+    _t("md5");
+  `);
+
+  tape.strictEqual(helpers.tracer.importedModules.has("crypto"), false);
+  tape.strictEqual(assignments.length, 0);
 
   tape.end();
 });

@@ -3,7 +3,7 @@ import { EventEmitter } from "events";
 
 // Import Internal Dependencies
 import { notNullOrUndefined } from "./notNullOrUndefined.js";
-import { isEvilIdentifierPath } from "./isEvilIdentifierPath.js";
+import { isEvilIdentifierPath, isNeutralCallable } from "./isEvilIdentifierPath.js";
 import { getSubMemberExpressionSegments } from "./getSubMemberExpressionSegments.js";
 import { getMemberExpressionIdentifier } from "../getMemberExpressionIdentifier.js";
 import { getCallExpressionIdentifier } from "../getCallExpressionIdentifier.js";
@@ -25,9 +25,15 @@ export class VariableTracer extends EventEmitter {
   /** @type {Map<string, string>} */
   literalIdentifiers = new Map();
 
+  /** @type {Set<string>} */
+  importedModules = new Set();
+
   // PRIVATE PROPERTIES
   #traced = new Map();
   #variablesRefToGlobal = new Set();
+
+  /** @type {Set<string>} */
+  #neutralCallable = new Set();
 
   debug() {
     console.log(this.#traced);
@@ -47,6 +53,7 @@ export class VariableTracer extends EventEmitter {
    * @param {!string} identifierOrMemberExpr
    * @param {object} [options]
    * @param {string} [options.name]
+   * @param {string} [options.moduleName=null]
    * @param {boolean} [options.followConsecutiveAssignment=false]
    *
    * @example
@@ -57,6 +64,7 @@ export class VariableTracer extends EventEmitter {
   trace(identifierOrMemberExpr, options = {}) {
     const {
       followConsecutiveAssignment = false,
+      moduleName = null,
       name = identifierOrMemberExpr
     } = options;
 
@@ -64,12 +72,19 @@ export class VariableTracer extends EventEmitter {
       name,
       identifierOrMemberExpr,
       followConsecutiveAssignment,
-      assignmentMemory: []
+      assignmentMemory: [],
+      moduleName
     });
+
     if (identifierOrMemberExpr.includes(".")) {
-      [...getSubMemberExpressionSegments(identifierOrMemberExpr)]
-        .filter((expr) => !this.#traced.has(expr))
-        .forEach((expr) => this.trace(expr, { followConsecutiveAssignment: true, name }));
+      const exprs = [...getSubMemberExpressionSegments(identifierOrMemberExpr)]
+        .filter((expr) => !this.#traced.has(expr));
+
+      for (const expr of exprs) {
+        this.trace(expr, {
+          followConsecutiveAssignment: true, name, moduleName
+        });
+      }
     }
 
     return this;
@@ -110,6 +125,13 @@ export class VariableTracer extends EventEmitter {
 
   #declareNewAssignment(identifierOrMemberExpr, id) {
     const tracedVariant = this.#traced.get(identifierOrMemberExpr);
+
+    // We return if required module has not been imported
+    // It mean the assigment has no relation with the required tracing
+    if (tracedVariant.moduleName !== null && !this.importedModules.has(tracedVariant.moduleName)) {
+      return;
+    }
+
     const newIdentiferName = id.name;
 
     const assignmentEventPayload = {
@@ -132,11 +154,24 @@ export class VariableTracer extends EventEmitter {
       this.#variablesRefToGlobal.has(identifierName);
   }
 
-  #reverseMemberExprParts(parts = []) {
+  /**
+   * Search alternative for the given MemberExpression parts
+   *
+   * @example
+   * const { process: aName } = globalThis;
+   * const boo = aName.mainModule.require; // alternative: process.mainModule.require
+   */
+  #searchForMemberExprAlternative(parts = []) {
     return parts.flatMap((identifierName) => {
       if (this.#traced.has(identifierName)) {
         return this.#traced.get(identifierName).identifierOrMemberExpr;
       }
+
+      /**
+       * If identifier is global then we can eliminate the value from MemberExpr
+       *
+       * globalThis.process === process;
+       */
       if (this.#isGlobalVariableIdentifier(identifierName)) {
         return [];
       }
@@ -160,6 +195,8 @@ export class VariableTracer extends EventEmitter {
     if (!this.#traced.has(moduleName)) {
       return;
     }
+
+    this.importedModules.add(moduleName);
 
     // import * as boo from "crypto";
     if (node.specifiers[0].type === "ImportNamespaceSpecifier") {
@@ -189,6 +226,7 @@ export class VariableTracer extends EventEmitter {
     if (!moduleNameLiteral) {
       return;
     }
+    this.importedModules.add(moduleNameLiteral.value);
 
     switch (id.type) {
       case "Identifier":
@@ -217,7 +255,8 @@ export class VariableTracer extends EventEmitter {
         const [identifierName] = fullIdentifierPath.split(".");
 
         // const id = Function.prototype.call.call(require, require, "http");
-        if (isEvilIdentifierPath(fullIdentifierPath)) {
+        if (this.#neutralCallable.has(identifierName) || isEvilIdentifierPath(fullIdentifierPath)) {
+          // TODO: make sure we are walking on a require CallExpr here ?
           this.#walkRequireCallExpression(variableDeclaratorNode);
         }
         else if (kUnsafeGlobalCallExpression.has(identifierName)) {
@@ -251,12 +290,15 @@ export class VariableTracer extends EventEmitter {
         const memberExprParts = [...getMemberExpressionIdentifier(init, { tracer: this })];
         const memberExprFullname = memberExprParts.join(".");
 
-        // TODO: evil path ?
-        if (this.#traced.has(memberExprFullname)) {
+        // Function.prototype.call
+        if (isNeutralCallable(memberExprFullname)) {
+          this.#neutralCallable.add(variableDeclaratorNode.id.name);
+        }
+        else if (this.#traced.has(memberExprFullname)) {
           this.#declareNewAssignment(memberExprFullname, variableDeclaratorNode.id);
         }
         else {
-          const alternativeMemberExprParts = this.#reverseMemberExprParts(memberExprParts);
+          const alternativeMemberExprParts = this.#searchForMemberExprAlternative(memberExprParts);
           const alternativeMemberExprFullname = alternativeMemberExprParts.join(".");
 
           if (this.#traced.has(alternativeMemberExprFullname)) {

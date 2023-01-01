@@ -6,7 +6,7 @@ Utilities for AST (ESTree compliant)
 This package is available in the Node Package Repository and can be easily installed with [npm](https://docs.npmjs.com/getting-started/what-is-npm) or [yarn](https://yarnpkg.com).
 
 ```bash
-$ npm i @nodesecure/estree-ast-utils
+$ npm i @nodesecure/estree-ast-utils  
 # or
 $ yarn add @nodesecure/estree-ast-utils
 ```

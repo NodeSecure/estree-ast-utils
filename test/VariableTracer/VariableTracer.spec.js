@@ -87,43 +87,60 @@ test("given a MemberExpression segment that doesn't match anything then it shoul
   tape.end();
 });
 
-// test("it should be able to Trace a require using Function.prototype.call", (tape) => {
-//   const helpers = createTracer();
-//   helpers.tracer.trace("http");
-//   const assignments = helpers.getAssignmentArray();
+test("it should be able to Trace a require using Function.prototype.call", (tape) => {
+  const helpers = createTracer();
+  helpers.tracer.trace("http");
+  const assignments = helpers.getAssignmentArray();
 
-//   helpers.walkOnCode(`
-//   const proto = Function.prototype.call.call(require, require, "http");
-//   `);
+  helpers.walkOnCode(`
+  const proto = Function.prototype.call.call(require, require, "http");
+  `);
 
-//   const proto = helpers.tracer.getDataFromIdentifier("proto");
+  const proto = helpers.tracer.getDataFromIdentifier("proto");
 
-//   tape.strictEqual(proto, null);
-//   tape.strictEqual(assignments.length, 1);
+  tape.strictEqual(proto, null);
+  tape.strictEqual(assignments.length, 1);
 
-//   const [eventOne] = assignments;
-//   tape.strictEqual(eventOne.identifierOrMemberExpr, "http");
-//   tape.strictEqual(eventOne.id, "proto");
+  const [eventOne] = assignments;
+  tape.strictEqual(eventOne.identifierOrMemberExpr, "http");
+  tape.strictEqual(eventOne.id, "proto");
 
-//   tape.end();
-// });
+  tape.end();
+});
 
-// test("it should be able to Trace an unsafe crypto.createHash using Function.prototype.call reassignment", (tape) => {
-//   const helpers = createTracer();
-//   helpers.tracer.trace("crypto.createHash", { followConsecutiveAssignment: true });
-//   const assignments = helpers.getAssignmentArray();
+test("it should be able to Trace an unsafe crypto.createHash using Function.prototype.call reassignment", (tape) => {
+  const helpers = createTracer(true);
+  helpers.tracer.trace("crypto.createHash", { followConsecutiveAssignment: true });
+  const assignments = helpers.getAssignmentArray();
 
-//   helpers.walkOnCode(`
-//   const aA = Function.prototype.call;
-//   const bB = require;
+  helpers.walkOnCode(`
+  const aA = Function.prototype.call;
+  const bB = require;
 
-//   const createHashBis = aA.call(bB, bB, "crypto").createHash;
-//   createHashBis("md5");
-//   `);
+  const crr = aA.call(bB, bB, "crypto");
+  const createHashBis = crr.createHash;
+  createHashBis("md5");
+  `);
 
-//   const createHashBis = helpers.tracer.getDataFromIdentifier("createHashBis");
-//   console.log(createHashBis);
-//   console.log(assignments);
+  const createHashBis = helpers.tracer.getDataFromIdentifier("createHashBis");
+  tape.deepEqual(createHashBis, {
+    name: "crypto.createHash",
+    identifierOrMemberExpr: "crypto.createHash",
+    assignmentMemory: ["crr", "createHashBis"]
+  });
 
-//   tape.end();
-// });
+  tape.strictEqual(helpers.tracer.importedModules.has("crypto"), true);
+  tape.strictEqual(assignments.length, 3);
+
+  const [eventOne, eventTwo, eventThree] = assignments;
+  tape.strictEqual(eventOne.identifierOrMemberExpr, "require");
+  tape.strictEqual(eventOne.id, "bB");
+
+  tape.strictEqual(eventTwo.identifierOrMemberExpr, "crypto");
+  tape.strictEqual(eventTwo.id, "crr");
+
+  tape.strictEqual(eventThree.identifierOrMemberExpr, "crypto.createHash");
+  tape.strictEqual(eventThree.id, "createHashBis");
+
+  tape.end();
+});
