@@ -1,4 +1,11 @@
 # estree-ast-utils
+![version](https://img.shields.io/badge/dynamic/json.svg?url=https://raw.githubusercontent.com/NodeSecure/estree-ast-utils/master/package.json&query=$.version&label=Version)
+[![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/NodeSecure/estree-ast-utils/commit-activity)
+[![OpenSSF
+Scorecard](https://api.securityscorecards.dev/projects/github.com/NodeSecure/estree-ast-utils/badge)](https://api.securityscorecards.dev/projects/github.com/NodeSecure/estree-ast-utils)
+[![mit](https://img.shields.io/github/license/Naereen/StrapDown.js.svg)](https://github.com/NodeSecure/estree-ast-utils/blob/master/LICENSE)
+![build](https://img.shields.io/github/actions/workflow/status/NodeSecure/estree-ast-utils/node.js.yml)
+
 Utilities for AST (ESTree compliant)
 
 ## Getting Started
