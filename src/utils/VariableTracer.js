@@ -252,6 +252,9 @@ export class VariableTracer extends EventEmitter {
       // const g = eval("this");
       case "CallExpression": {
         const fullIdentifierPath = getCallExpressionIdentifier(init);
+        if (fullIdentifierPath === null) {
+          break;
+        }
         const [identifierName] = fullIdentifierPath.split(".");
 
         // const id = Function.prototype.call.call(require, require, "http");
@@ -318,6 +321,9 @@ export class VariableTracer extends EventEmitter {
       // const { process } = eval("this");
       case "CallExpression": {
         const fullIdentifierPath = getCallExpressionIdentifier(init);
+        if (fullIdentifierPath === null) {
+          break;
+        }
         const [identifierName] = fullIdentifierPath.split(".");
 
         // const {} = Function.prototype.call.call(require, require, "http");
