@@ -67,11 +67,17 @@ export function* getVariableDeclarationIdentifiers(node, options = {}) {
       break;
 
     /**
+     * const [{ foo }] = []
      * const [foo = 10] = []
      *       ↪ Destructuration + Assignement of a default value
      */
     case "AssignmentPattern":
-      yield node.left.name;
+      if (node.left.type === "Identifier") {
+        yield node.left.name;
+      }
+      else {
+        yield* getVariableDeclarationIdentifiers(node.left);
+      }
 
       break;
 
