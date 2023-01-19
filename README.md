@@ -1,10 +1,11 @@
 # estree-ast-utils
-![version](https://img.shields.io/badge/dynamic/json.svg?url=https://raw.githubusercontent.com/NodeSecure/estree-ast-utils/master/package.json&query=$.version&label=Version)
-[![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/NodeSecure/estree-ast-utils/commit-activity)
+
+![version](https://img.shields.io/badge/dynamic/json.svg?style=for-the-badge&url=https://raw.githubusercontent.com/NodeSecure/npm-registry-sdk/master/package.json&query=$.version&label=Version)
+[![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg?style=for-the-badge)](https://github.com/NodeSecure/npm-registry-sdk/commit-activity)
 [![OpenSSF
-Scorecard](https://api.securityscorecards.dev/projects/github.com/NodeSecure/estree-ast-utils/badge)](https://api.securityscorecards.dev/projects/github.com/NodeSecure/estree-ast-utils)
-[![mit](https://img.shields.io/github/license/Naereen/StrapDown.js.svg)](https://github.com/NodeSecure/estree-ast-utils/blob/master/LICENSE)
-![build](https://img.shields.io/github/actions/workflow/status/NodeSecure/estree-ast-utils/node.js.yml)
+Scorecard](https://api.securityscorecards.dev/projects/github.com/NodeSecure/npm-registry-sdk/badge?style=for-the-badge)](https://api.securityscorecards.dev/projects/github.com/NodeSecure/npm-registry-sdk)
+[![mit](https://img.shields.io/github/license/Naereen/StrapDown.js.svg?style=for-the-badge)](https://github.com/NodeSecure/npm-registry-sdk/blob/master/LICENSE)
+![build](https://img.shields.io/github/actions/workflow/status/NodeSecure/npm-registry-sdk/node.js.yml?style=for-the-badge)
 
 Utilities for AST (ESTree compliant)
 
@@ -13,7 +14,7 @@ Utilities for AST (ESTree compliant)
 This package is available in the Node Package Repository and can be easily installed with [npm](https://docs.npmjs.com/getting-started/what-is-npm) or [yarn](https://yarnpkg.com).
 
 ```bash
-$ npm i @nodesecure/estree-ast-utils  
+$ npm i @nodesecure/estree-ast-utils
 # or
 $ yarn add @nodesecure/estree-ast-utils
 ```
@@ -23,8 +24,7 @@ $ yarn add @nodesecure/estree-ast-utils
 ```js
 import { VariableTracer } from "@nodesecure/estree-ast-utils";
 
-const tracer = new VariableTracer()
-  .enableDefaultTracing();
+const tracer = new VariableTracer().enableDefaultTracing();
 
 const data = tracer.getDataFromIdentifier("identifier...here");
 console.log(data);
@@ -37,7 +37,7 @@ console.log(data);
 Translate an ESTree ArrayExpression into an iterable of Literal value.
 
 ```js
-["foo", "bar"]
+["foo", "bar"];
 ```
 
 will return `"foo"` then `"bar"`.
@@ -49,7 +49,7 @@ will return `"foo"` then `"bar"`.
 Return all Literal part of a given Binary Expression.
 
 ```js
-"foo" + "bar"
+"foo" + "bar";
 ```
 
 will return `"foo"` then `"bar"`.
@@ -63,7 +63,7 @@ One of the options of the method is `stopOnUnsupportedNode`, if true it will thr
 Return the identifier name of the CallExpression (or null if there is none).
 
 ```js
-foobar()
+foobar();
 ```
 
 will return `"foobar"`.
@@ -75,7 +75,7 @@ will return `"foobar"`.
 Return the identifier name of the CallExpression (or null if there is none).
 
 ```js
-foo.bar()
+foo.bar();
 ```
 
 will return `"foo"` then `"bar"`.
@@ -99,7 +99,7 @@ will return `"foo"` then `"bar"`.
 Return `true` if the given Node is a Literal Regex Node.
 
 ```js
-/^hello/g
+/^hello/g;
 ```
 
 </details>
@@ -107,7 +107,9 @@ Return `true` if the given Node is a Literal Regex Node.
 ## Contributors ✨
 
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
+
 [![All Contributors](https://img.shields.io/badge/all_contributors-1-orange.svg?style=flat-square)](#contributors-)
+
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/docs/en/emoji-key)):
@@ -127,4 +129,5 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
 <!-- ALL-CONTRIBUTORS-LIST:END -->
 
 ## License
+
 MIT
