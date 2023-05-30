@@ -1,11 +1,11 @@
 # estree-ast-utils
 
-![version](https://img.shields.io/badge/dynamic/json.svg?style=for-the-badge&url=https://raw.githubusercontent.com/NodeSecure/npm-registry-sdk/master/package.json&query=$.version&label=Version)
-[![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg?style=for-the-badge)](https://github.com/NodeSecure/npm-registry-sdk/commit-activity)
+[![version](https://img.shields.io/badge/dynamic/json.svg?style=for-the-badge&url=https://raw.githubusercontent.com/NodeSecure/estree-ast-utils/main/package.json&query=$.version&label=Version)](https://www.npmjs.com/package/@nodesecure/estree-ast-utils)
+[![maintained](https://img.shields.io/badge/Maintained%3F-yes-green.svg?style=for-the-badge)](https://github.com/NodeSecure/estree-ast-utils/graphs/commit-activity)
 [![OpenSSF
-Scorecard](https://api.securityscorecards.dev/projects/github.com/NodeSecure/npm-registry-sdk/badge?style=for-the-badge)](https://api.securityscorecards.dev/projects/github.com/NodeSecure/npm-registry-sdk)
-[![mit](https://img.shields.io/github/license/Naereen/StrapDown.js.svg?style=for-the-badge)](https://github.com/NodeSecure/npm-registry-sdk/blob/master/LICENSE)
-![build](https://img.shields.io/github/actions/workflow/status/NodeSecure/npm-registry-sdk/node.js.yml?style=for-the-badge)
+Scorecard](https://api.securityscorecards.dev/projects/github.com/NodeSecure/estree-ast-utils/badge?style=for-the-badge)](https://api.securityscorecards.dev/projects/github.com/NodeSecure/estree-ast-utils)
+[![mit](https://img.shields.io/github/license/NodeSecure/estree-ast-utils.svg?style=for-the-badge)](https://github.com/NodeSecure/estree-ast-utils/blob/main/LICENSE)
+[![build](https://img.shields.io/github/actions/workflow/status/NodeSecure/estree-ast-utils/node.js.yml?style=for-the-badge)](https://github.com/NodeSecure/estree-ast-utils/actions?query=workflow%3A%22Node.js+CI%22)
 
 Utilities for AST (ESTree compliant)
 
