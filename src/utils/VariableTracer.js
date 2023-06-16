@@ -114,6 +114,10 @@ export class VariableTracer extends EventEmitter {
     }
 
     const tracedIdentifier = this.#traced.get(finalIdentifier);
+    if (!this.#isTracedIdentifierImportedAsModule(tracedIdentifier)) {
+      return null;
+    }
+
     const assignmentMemory = this.#traced.get(tracedIdentifier.name)?.assignmentMemory ?? [];
 
     return {
@@ -123,12 +127,16 @@ export class VariableTracer extends EventEmitter {
     };
   }
 
+  #isTracedIdentifierImportedAsModule(id) {
+    return id.moduleName === null || this.importedModules.has(id.moduleName);
+  }
+
   #declareNewAssignment(identifierOrMemberExpr, id) {
     const tracedVariant = this.#traced.get(identifierOrMemberExpr);
 
     // We return if required module has not been imported
     // It mean the assigment has no relation with the required tracing
-    if (tracedVariant.moduleName !== null && !this.importedModules.has(tracedVariant.moduleName)) {
+    if (!this.#isTracedIdentifierImportedAsModule(tracedVariant)) {
       return;
     }
 

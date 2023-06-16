@@ -171,3 +171,24 @@ test("it should not detect variable assignment since the crypto module is not im
 
   tape.end();
 });
+
+test("it should return null because crypto.createHash is not imported from a module", (tape) => {
+  const helpers = createTracer(true);
+  helpers.tracer.trace("crypto.createHash", {
+    followConsecutiveAssignment: true,
+    moduleName: "crypto"
+  });
+
+  helpers.walkOnCode(`
+    const crypto = {
+      createHash() {}
+    }
+    const evil = crypto.createHash;
+    evil('md5');
+  `);
+
+  const result = helpers.tracer.getDataFromIdentifier("crypto.createHash");
+  tape.strictEqual(result, null);
+
+  tape.end();
+});
