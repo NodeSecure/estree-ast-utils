@@ -8,6 +8,7 @@ import { getSubMemberExpressionSegments } from "./getSubMemberExpressionSegments
 import { getMemberExpressionIdentifier } from "../getMemberExpressionIdentifier.js";
 import { getCallExpressionIdentifier } from "../getCallExpressionIdentifier.js";
 import { getVariableDeclarationIdentifiers } from "../getVariableDeclarationIdentifiers.js";
+import { getCallExpressionArguments } from "../getCallExpressionArguments.js";
 
 // CONSTANTS
 const kGlobalIdentifiersToTrace = new Set([
@@ -45,7 +46,8 @@ export class VariableTracer extends EventEmitter {
 
     return this
       .trace("eval")
-      .trace("Function");
+      .trace("Function")
+      .trace("atob", { followConsecutiveAssignment: true });
   }
 
   /**
@@ -125,6 +127,11 @@ export class VariableTracer extends EventEmitter {
       identifierOrMemberExpr: tracedIdentifier.identifierOrMemberExpr,
       assignmentMemory
     };
+  }
+
+  #getTracedName(identifierOrMemberExpr) {
+    return this.#traced.has(identifierOrMemberExpr) ?
+      this.#traced.get(identifierOrMemberExpr).name : null;
   }
 
   #isTracedIdentifierImportedAsModule(id) {
@@ -263,6 +270,8 @@ export class VariableTracer extends EventEmitter {
         if (fullIdentifierPath === null) {
           break;
         }
+
+        const tracedFullIdentifierName = this.#getTracedName(fullIdentifierPath) ?? fullIdentifierPath;
         const [identifierName] = fullIdentifierPath.split(".");
 
         // const id = Function.prototype.call.call(require, require, "http");
@@ -277,6 +286,20 @@ export class VariableTracer extends EventEmitter {
         // const bar = require.call(null, "crypto");
         else if (kRequirePatterns.has(identifierName)) {
           this.#walkRequireCallExpression(variableDeclaratorNode);
+        }
+        else if (tracedFullIdentifierName === "atob") {
+          const callExprArguments = getCallExpressionArguments(init, { tracer: this });
+          if (callExprArguments === null) {
+            break;
+          }
+
+          const callExprArgumentNode = callExprArguments.at(0);
+          if (typeof callExprArgumentNode === "string") {
+            this.literalIdentifiers.set(
+              id.name,
+              Buffer.from(callExprArgumentNode, "base64").toString()
+            );
+          }
         }
 
         break;
