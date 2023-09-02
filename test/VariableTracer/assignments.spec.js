@@ -111,3 +111,24 @@ test("it should be able to Trace an Unsafe Function() Assignment using an ESTree
 
   tape.end();
 });
+
+test("it should be able to Trace a require Assignment with atob", (tape) => {
+  const helpers = createTracer(true);
+  const assignments = helpers.getAssignmentArray();
+
+  helpers.walkOnCode(`
+    const xo = atob;
+    const yo = 'b3M=';
+    const ff = xo(yo);
+  `);
+  tape.strictEqual(assignments.length, 1);
+
+  const [eventOne] = assignments;
+  tape.strictEqual(eventOne.identifierOrMemberExpr, "atob");
+  tape.strictEqual(eventOne.id, "xo");
+
+  tape.true(helpers.tracer.literalIdentifiers.has("ff"));
+  tape.strictEqual(helpers.tracer.literalIdentifiers.get("ff"), "os");
+
+  tape.end();
+});
