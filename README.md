@@ -1,3 +1,6 @@
+> [!CAUTION]
+> This package has been migrated to [JS-X-Ray workspaces](https://github.com/NodeSecure/js-x-ray?tab=readme-ov-file#workspaces)
+
 # estree-ast-utils
 
 [![version](https://img.shields.io/badge/dynamic/json.svg?style=for-the-badge&url=https://raw.githubusercontent.com/NodeSecure/estree-ast-utils/main/package.json&query=$.version&label=Version)](https://www.npmjs.com/package/@nodesecure/estree-ast-utils)
